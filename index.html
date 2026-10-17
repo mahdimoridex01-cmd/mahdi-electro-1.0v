@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mahdi electro - محاكي الهواتف الذكية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+            user-select: none;
+        }
+        body {
+            background: #090d16;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        /* 3D Perspective Card Flip Effect */
+        .phone-perspective {
+            perspective: 1200px;
+        }
+        
+        .phone-flipper {
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        
+        .phone-flipper.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .phone-front, .phone-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        
+        .phone-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Glassmorphic Panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Phone Screen Wallpapers */
+        .wp-ios-aurora {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 35%, #415a77 70%, #1e3a8a 100%);
+        }
+        .wp-ios-sunset {
+            background: linear-gradient(135deg, #2d00f7 0%, #6b00f7 30%, #a100f7 60%, #f700a1 100%);
+        }
+        .wp-samsung-cyber {
+            background: linear-gradient(135deg, #020024 0%, #090979 35%, #00d4ff 100%);
+        }
+        .wp-pixel-abstract {
+            background: linear-gradient(135deg, #134e5e 0%, #71b280 100%);
+        }
+
+        /* Smooth iOS app transition */
+        .app-window {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 lg:p-6">
+
+    <!-- Header / Brand -->
+    <header class="w-full max-w-6xl flex flex-wrap justify-between items-center py-3 px-6 glass-panel rounded-2xl mb-4 shadow-2xl gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-cyan-500/30">
+                M
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-blue-200 to-amber-300 bg-clip-text text-transparent">
+                    mahdi electro
+                </h1>
+                <p class="text-[11px] text-slate-400">منصة محاكاة واختبار أحدث الهواتف الذكية (Interactive Smartphone Hub)</p>
+            </div>
+        </div>
+
+        <!-- Phone Switcher Tabs -->
+        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-white/10">
+            <button id="tab-iphone" onclick="switchPhone('iphone')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-md flex items-center gap-2">
+                <i class="fa-brands fa-apple"></i> iPhone 17 Pro
+            </button>
+            <button id="tab-samsung" onclick="switchPhone('samsung')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-2">
+                <i class="fa-solid fa-mobile-screen"></i> Galaxy S25 Ultra
+            </button>
+            <button id="tab-pixel" onclick="switchPhone('pixel')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-2">
+                <i class="fa-brands fa-google"></i> Pixel 9 Pro
+            </button>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+            <button id="btn-flip" onclick="toggleFlip()" class="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 rounded-xl border border-cyan-500/30 flex items-center gap-2 transition-all font-semibold">
+                <i class="fa-solid fa-arrows-rotate"></i> تقليب (أمام / خلف)
+            </button>
+            <button id="btn-power" onclick="togglePower()" class="px-3 py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl border border-red-500/30 flex items-center gap-2 transition-all font-semibold">
+                <i class="fa-solid fa-power-off"></i> <span id="power-text">إيقاف التشغيل</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Interactive Display -->
+    <main class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto">
+        
+        <!-- Sidebar Controls & Phone Specs -->
+        <div class="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-1">
+            
+            <!-- Phone Model Info -->
+            <div class="glass-panel p-5 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="phone-brand-badge" class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold border border-blue-500/30">Apple Flagship</span>
+                    <span class="text-xs text-slate-400 font-mono" id="phone-year">2026 Model</span>
+                </div>
+                <h2 id="phone-title" class="text-xl font-bold text-white mb-1">iPhone 17 Pro Max</h2>
+                <p id="phone-os-tag" class="text-xs text-cyan-400 font-semibold mb-3">iOS 19 Pro Experience</p>
+                <div class="h-0.5 w-full bg-slate-800 mb-3"></div>
+
+                <!-- Specs List -->
+                <ul class="text-xs space-y-2 text-slate-300">
+                    <li class="flex justify-between border-b border-white/5 pb-1"><span>الشاشة:</span> <strong id="spec-screen" class="text-white">6.9" Super Retina OLED (144Hz)</strong></li>
+                    <li class="flex justify-between border-b border-white/5 pb-1"><span>المعالج:</span> <strong id="spec-chip" class="text-amber-300">A19 Pro (3nm Ultra)</strong></li>
+                    <li class="flex justify-between border-b border-white/5 pb-1"><span>الكاميرات:</span> <strong id="spec-camera" class="text-white">48MP + 48MP + 48MP Periscope</strong></li>
+                    <li class="flex justify-between border-b border-white/5 pb-1"><span>الرام / التخزين:</span> <strong id="spec-ram" class="text-cyan-300">12GB / 1TB Titanium</strong></li>
+                    <li class="flex justify-between"><span>الشحن والبطارية:</span> <strong id="spec-battery" class="text-emerald-400">5100 mAh (45W Fast Charge)</strong></li>
+                </ul>
+            </div>
+
+            <!-- Color Palette Selector -->
+            <div class="glass-panel p-5 rounded-2xl shadow-xl">
+                <h3 class="text-xs font-bold mb-3 flex items-center gap-2 text-cyan-300">
+                    <i class="fa-solid fa-palette"></i> اختر لون الهاتف الرئيسي
+                </h3>
+                <div id="color-selector-grid" class="grid grid-cols-4 gap-2">
+                    <!-- Dynamic Colors inserted via JS -->
+                </div>
+            </div>
+
+            <!-- Wallpapers Selector -->
+            <div class="glass-panel p-5 rounded-2xl shadow-xl">
+                <h3 class="text-xs font-bold mb-3 flex items-center gap-2 text-amber-300">
+                    <i class="fa-solid fa-image"></i> اختر الخلفية الحية
+                </h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setWallpaper('wp-ios-aurora')" class="h-12 rounded-xl wp-ios-aurora border border-white/20 hover:scale-105 transition-transform flex items-end justify-center pb-1 text-[10px] font-bold">شفق</button>
+                    <button onclick="setWallpaper('wp-ios-sunset')" class="h-12 rounded-xl wp-ios-sunset border border-white/20 hover:scale-105 transition-transform flex items-end justify-center pb-1 text-[10px] font-bold">غروب</button>
+                    <button onclick="setWallpaper('wp-samsung-cyber')" class="h-12 rounded-xl wp-samsung-cyber border border-white/20 hover:scale-105 transition-transform flex items-end justify-center pb-1 text-[10px] font-bold">سايبر</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Interactive 2D Phone Frame -->
+        <div class="lg:col-span-8 flex justify-center items-center phone-perspective py-2 order-1 lg:order-2">
+            
+            <div id="phone-flipper" class="phone-flipper relative w-[340px] h-[670px]">
+                
+                <!-- FRONT OF PHONE (Screen + Active System) -->
+                <div id="phone-front-side" class="phone-front absolute inset-0 rounded-[48px] p-[9px] shadow-2xl transition-all duration-300" style="background: #a39b8e;">
+                    
+                    <!-- Outer Metallic Bezel -->
+                    <div class="w-full h-full bg-black rounded-[40px] relative overflow-hidden flex flex-col border-[2px] border-black/80 shadow-inner">
+                        
+                        <!-- Screen Off Overlay -->
+                        <div id="screen-off-overlay" class="absolute inset-0 bg-black z-50 transition-opacity duration-500 pointer-events-none opacity-0 flex items-center justify-center">
+                            <i class="fa-brands fa-apple text-4xl text-slate-800 opacity-20"></i>
+                        </div>
+
+                        <!-- Top Status Bar -->
+                        <div id="phone-screen" class="w-full h-full wp-ios-aurora flex flex-col relative transition-all duration-300">
+                            
+                            <!-- Dynamic Island / Punchhole Header -->
+                            <div class="w-full pt-3 px-6 flex justify-between items-center z-40 text-xs text-white font-semibold">
+                                <span id="clock-time">09:41</span>
+                                
+                                <!-- Dynamic Island / Camera Cutout -->
+                                <div id="dynamic-island" onclick="expandIsland()" class="cursor-pointer bg-black rounded-full px-3 py-1 text-[11px] flex items-center justify-between gap-2 shadow-lg transition-all duration-300 w-[120px] h-[26px]">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                                        <div class="w-1 h-1 rounded-full bg-indigo-500"></div>
+                                    </div>
+                                    <span id="island-text" class="text-[10px] text-slate-300 truncate">iPhone 17 Pro</span>
+                                    <i id="island-icon" class="fa-solid fa-apple text-amber-400 text-[10px]"></i>
+                                </div>
+
+                                <div class="flex items-center gap-1.5 text-[11px]">
+                                    <i class="fa-solid fa-signal"></i>
+                                    <i class="fa-solid fa-wifi"></i>
+                                    <i class="fa-solid fa-battery-full text-emerald-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Lock / Main OS Screen Content -->
+                            <div id="main-screen-content" class="flex-1 flex flex-col justify-between p-4 z-10 overflow-hidden">
+                                
+                                <!-- Clock & Date Widget -->
+                                <div class="text-center mt-3">
+                                    <h2 id="widget-time" class="text-5xl font-extrabold text-white tracking-tight drop-shadow-md">09:41</h2>
+                                    <p id="widget-date" class="text-xs text-slate-200 font-medium mt-1">السبت، 17 أكتوبر</p>
+                                    
+                                    <!-- Weather / Mahdi Electro Widget -->
+                                    <div class="mt-3 bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 flex justify-between items-center text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-cloud-sun text-amber-400 text-lg"></i>
+                                            <div class="text-right">
+                                                <div class="font-bold text-[11px]">mahdi electro</div>
+                                                <div class="text-[9px] text-cyan-300">متصل بالسيرفر الذكي</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-left border-r border-white/10 pr-2">
+                                            <div class="font-bold text-emerald-400 text-[11px]">100%</div>
+                                            <div class="text-[9px] text-slate-300">45W Super Charge</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Apps Grid -->
+                                <div class="grid grid-cols-4 gap-3 my-auto pt-2">
+                                    
+                                    <!-- App 1: Camera -->
+                                    <button onclick="openApp('camera')" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-camera text-cyan-400"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الكاميرا</span>
+                                    </button>
+
+                                    <!-- App 2: Calculator -->
+                                    <button onclick="openApp('calculator')" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-calculator"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الحاسبة</span>
+                                    </button>
+
+                                    <!-- App 3: Gallery -->
+                                    <button onclick="openApp('photos')" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-images text-amber-500"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الصور</span>
+                                    </button>
+
+                                    <!-- App 4: Notes -->
+                                    <button onclick="openApp('notes')" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center text-slate-900 text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-note-sticky"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الملاحظات</span>
+                                    </button>
+
+                                    <!-- App 5: Settings -->
+                                    <button onclick="openApp('settings')" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-slate-700 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-gear"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الإعدادات</span>
+                                    </button>
+
+                                    <!-- App 6: Browser -->
+                                    <button onclick="triggerIslandCall()" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-compass"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">المتصفح</span>
+                                    </button>
+
+                                    <!-- App 7: Music -->
+                                    <button onclick="triggerIslandMusic()" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-pink-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-music"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">الموسيقى</span>
+                                    </button>
+
+                                    <!-- App 8: Phone Calls -->
+                                    <button onclick="triggerIslandCall()" class="flex flex-col items-center gap-1 group">
+                                        <div class="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-active:scale-95 transition-transform border border-white/10">
+                                            <i class="fa-solid fa-phone"></i>
+                                        </div>
+                                        <span class="text-[10px] font-medium text-white shadow-sm">المكالمات</span>
+                                    </button>
+                                </div>
+
+                                <!-- Dock Apps -->
+                                <div class="bg-white/20 backdrop-blur-xl border border-white/20 rounded-3xl p-2 flex justify-around items-center mb-1">
+                                    <div onclick="triggerIslandCall()" class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-base shadow-md cursor-pointer"><i class="fa-solid fa-phone"></i></div>
+                                    <div onclick="openApp('notes')" class="w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-base shadow-md cursor-pointer"><i class="fa-solid fa-message"></i></div>
+                                    <div onclick="openApp('photos')" class="w-10 h-10 bg-sky-500 rounded-2xl flex items-center justify-center text-white text-base shadow-md cursor-pointer"><i class="fa-solid fa-globe"></i></div>
+                                    <div onclick="triggerIslandMusic()" class="w-10 h-10 bg-pink-500 rounded-2xl flex items-center justify-center text-white text-base shadow-md cursor-pointer"><i class="fa-solid fa-compact-disc"></i></div>
+                                </div>
+
+                                <!-- Home Bar Line -->
+                                <div onclick="closeApp()" class="w-28 h-1 bg-white/70 rounded-full mx-auto mb-1 cursor-pointer hover:bg-white transition-colors"></div>
+                            </div>
+
+                            <!-- APP 1: Camera -->
+                            <div id="app-camera" class="app-window absolute inset-0 bg-black z-30 flex flex-col justify-between p-4 hidden">
+                                <div class="flex justify-between items-center text-white pt-6 text-xs">
+                                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                                    <span id="cam-app-title">48MP PRO CAMERA</span>
+                                    <i class="fa-solid fa-sliders"></i>
+                                </div>
+                                <div class="my-auto h-64 bg-slate-900 rounded-2xl overflow-hidden relative flex items-center justify-center border border-slate-800">
+                                    <img id="camera-preview" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60" class="w-full h-full object-cover">
+                                    <div class="absolute bottom-2 right-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-amber-300">mahdi electro AI Lens</div>
+                                </div>
+                                <div class="flex justify-around items-center pb-6">
+                                    <button onclick="switchCameraPhoto()" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white text-sm"><i class="fa-solid fa-arrows-rotate"></i></button>
+                                    <button onclick="takeSnap()" class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center"><div class="w-12 h-12 bg-white rounded-full active:scale-90 transition-transform"></div></button>
+                                    <button onclick="closeApp()" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- APP 2: Calculator -->
+                            <div id="app-calculator" class="app-window absolute inset-0 bg-black z-30 flex flex-col justify-between p-4 hidden text-white">
+                                <div class="pt-8 text-right px-2">
+                                    <span id="calc-display" class="text-4xl font-bold tracking-wider">0</span>
+                                </div>
+                                <div class="grid grid-cols-4 gap-2 pb-6">
+                                    <button onclick="calcInput('C')" class="h-11 bg-slate-400 text-black font-bold rounded-full text-xs">C</button>
+                                    <button onclick="calcInput('±')" class="h-11 bg-slate-400 text-black font-bold rounded-full text-xs">±</button>
+                                    <button onclick="calcInput('%')" class="h-11 bg-slate-400 text-black font-bold rounded-full text-xs">%</button>
+                                    <button onclick="calcInput('/')" class="h-11 bg-amber-500 font-bold rounded-full text-xs">÷</button>
+                                    
+                                    <button onclick="calcInput('7')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">7</button>
+                                    <button onclick="calcInput('8')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">8</button>
+                                    <button onclick="calcInput('9')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">9</button>
+                                    <button onclick="calcInput('*')" class="h-11 bg-amber-500 font-bold rounded-full text-xs">×</button>
+                                    
+                                    <button onclick="calcInput('4')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">4</button>
+                                    <button onclick="calcInput('5')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">5</button>
+                                    <button onclick="calcInput('6')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">6</button>
+                                    <button onclick="calcInput('-')" class="h-11 bg-amber-500 font-bold rounded-full text-xs">-</button>
+                                    
+                                    <button onclick="calcInput('1')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">1</button>
+                                    <button onclick="calcInput('2')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">2</button>
+                                    <button onclick="calcInput('3')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">3</button>
+                                    <button onclick="calcInput('+')" class="h-11 bg-amber-500 font-bold rounded-full text-xs">+</button>
+                                    
+                                    <button onclick="calcInput('0')" class="col-span-2 h-11 bg-slate-800 font-bold rounded-full text-xs text-right pr-6">0</button>
+                                    <button onclick="calcInput('.')" class="h-11 bg-slate-800 font-bold rounded-full text-xs">.</button>
+                                    <button onclick="calcInput('=')" class="h-11 bg-amber-500 font-bold rounded-full text-xs">=</button>
+                                </div>
+                                <div onclick="closeApp()" class="w-28 h-1 bg-white/70 rounded-full mx-auto mb-1 cursor-pointer"></div>
+                            </div>
+
+                            <!-- APP 3: Notes -->
+                            <div id="app-notes" class="app-window absolute inset-0 bg-slate-900 z-30 flex flex-col justify-between p-4 hidden text-white">
+                                <div class="pt-6 flex justify-between items-center border-b border-slate-700 pb-2">
+                                    <h3 class="font-bold text-cyan-400 text-xs">ملاحظات mahdi electro</h3>
+                                    <button onclick="closeApp()" class="text-[10px] bg-slate-800 px-2 py-1 rounded-lg">إغلاق</button>
+                                </div>
+                                <textarea id="notes-text" class="flex-1 my-3 bg-slate-800/60 p-3 rounded-xl border border-slate-700 text-xs leading-relaxed outline-none resize-none text-slate-200" placeholder="اكتب أفكارك أو ملاحظاتك هنا..."></textarea>
+                                <div onclick="closeApp()" class="w-28 h-1 bg-white/70 rounded-full mx-auto mb-1 cursor-pointer"></div>
+                            </div>
+
+                            <!-- APP 4: Gallery -->
+                            <div id="app-photos" class="app-window absolute inset-0 bg-black z-30 flex flex-col justify-between p-4 hidden text-white">
+                                <div class="pt-6 flex justify-between items-center border-b border-slate-800 pb-2">
+                                    <h3 class="font-bold text-xs">معرض الصور 4K</h3>
+                                    <button onclick="closeApp()" class="text-[10px] bg-slate-800 px-2 py-1 rounded-lg">إغلاق</button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 my-auto">
+                                    <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&auto=format&fit=crop&q=60" class="rounded-xl h-24 object-cover border border-slate-800">
+                                    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&auto=format&fit=crop&q=60" class="rounded-xl h-24 object-cover border border-slate-800">
+                                    <img src="https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=300&auto=format&fit=crop&q=60" class="rounded-xl h-24 object-cover border border-slate-800">
+                                    <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=300&auto=format&fit=crop&q=60" class="rounded-xl h-24 object-cover border border-slate-800">
+                                </div>
+                                <div onclick="closeApp()" class="w-28 h-1 bg-white/70 rounded-full mx-auto mb-1 cursor-pointer"></div>
+                            </div>
+
+                            <!-- APP 5: Settings -->
+                            <div id="app-settings" class="app-window absolute inset-0 bg-slate-900 z-30 flex flex-col justify-between p-4 hidden text-white">
+                                <div class="pt-6 border-b border-slate-800 pb-2">
+                                    <h3 class="font-bold text-xs">إعدادات النظام - mahdi electro</h3>
+                                </div>
+                                <div class="space-y-2.5 my-auto text-xs">
+                                    <div class="bg-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                                        <span>اسم الهاتف</span>
+                                        <span id="setting-device-name" class="text-cyan-400 font-semibold">iPhone 17 Pro Max</span>
+                                    </div>
+                                    <div class="bg-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                                        <span>إصدار النظام</span>
+                                        <span id="setting-os-ver" class="text-slate-400">iOS 19.0.1</span>
+                                    </div>
+                                    <div class="bg-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                                        <span>حالة البطارية</span>
+                                        <span class="text-emerald-400 font-bold">100% (ممتازة)</span>
+                                    </div>
+                                    <div class="bg-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                                        <span>السيرفر المربوط</span>
+                                        <span class="text-amber-300">mahdi electro Cloud</span>
+                                    </div>
+                                </div>
+                                <button onclick="closeApp()" class="w-full py-2 bg-slate-800 rounded-xl text-xs">رجوع</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BACK OF PHONE (Cameras & Back Glass Plate) -->
+                <div id="phone-back-side" class="phone-back absolute inset-0 rounded-[48px] p-[9px] shadow-2xl transition-all duration-300" style="background: #a39b8e;">
+                    
+                    <div id="back-glass-texture" class="w-full h-full rounded-[40px] relative overflow-hidden flex flex-col items-center justify-between p-6 border-[2px] border-black/40 shadow-2xl" style="background: radial-gradient(circle at center, #9e9587 0%, #887f71 100%);">
+                        
+                        <!-- Dynamic Back Camera Module -->
+                        <div id="back-camera-module">
+                            <!-- Camera rendering generated via JS according to selected Phone -->
+                        </div>
+
+                        <!-- Brand Logo -->
+                        <div class="my-auto opacity-80" id="back-brand-logo">
+                            <i class="fa-brands fa-apple text-6xl text-slate-200 drop-shadow-lg"></i>
+                        </div>
+
+                        <!-- MagSafe / Bottom Mark -->
+                        <div id="back-bottom-mark" class="w-24 h-24 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-2">
+                            <span class="text-[8px] text-white/40 tracking-widest font-mono">MAHDI ELECTRO</span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-6xl glass-panel rounded-2xl py-2.5 px-6 text-center text-xs text-slate-400 mt-4">
+        mahdi electro © 2026 • منصة المحاكاة والتفاعل الأكثر تطوراً لجديد أجهزة الهواتف الذكية
+    </footer>
+
+    <script>
+        // Phone Database & Configurations
+        const phoneData = {
+            iphone: {
+                title: "iPhone 17 Pro Max",
+                brandBadge: "Apple Flagship",
+                osTag: "iOS 19 Pro Experience",
+                year: "2026 Model",
+                specs: {
+                    screen: '6.9" Super Retina OLED (144Hz)',
+                    chip: "A19 Pro (3nm Ultra)",
+                    camera: "48MP + 48MP + 48MP Periscope",
+                    ram: "12GB / 1TB Titanium",
+                    battery: "5100 mAh (45W Fast Charge)"
+                },
+                colors: {
+                    natural: { name: 'طبيعي', frame: '#a39b8e', backGrad: 'radial-gradient(circle at center, #9e9587 0%, #887f71 100%)' },
+                    desert: { name: 'صحراوي', frame: '#cbb295', backGrad: 'radial-gradient(circle at center, #c2a88a 0%, #ab9173 100%)' },
+                    dark: { name: 'داكن', frame: '#2b2c30', backGrad: 'radial-gradient(circle at center, #232427 0%, #17181a 100%)' },
+                    deepblue: { name: 'أزرق', frame: '#1a2a3a', backGrad: 'radial-gradient(circle at center, #182736 0%, #0d1722 100%)' }
+                },
+                defaultWp: 'wp-ios-aurora',
+                logo: '<i class="fa-brands fa-apple text-6xl text-slate-200 drop-shadow-lg"></i>',
+                cameraModule: `
+                    <div class="w-[160px] h-[160px] bg-white/10 backdrop-blur-md rounded-[36px] border border-white/20 shadow-2xl p-2.5 relative grid grid-cols-2 gap-2 items-center justify-items-center">
+                        <div class="w-13 h-13 rounded-full bg-neutral-900 border-2 border-slate-400/80 p-1 flex items-center justify-center shadow-inner">
+                            <div class="w-9 h-9 rounded-full bg-black border border-indigo-900 flex items-center justify-center">
+                                <div class="w-4 h-4 rounded-full bg-blue-950/80 border border-indigo-400/30"></div>
+                            </div>
+                        </div>
+                        <div class="w-13 h-13 rounded-full bg-neutral-900 border-2 border-slate-400/80 p-1 flex items-center justify-center shadow-inner">
+                            <div class="w-9 h-9 rounded-full bg-black border border-indigo-900 flex items-center justify-center">
+                                <div class="w-4 h-4 rounded-full bg-blue-950/80 border border-indigo-400/30"></div>
+                            </div>
+                        </div>
+                        <div class="w-13 h-13 rounded-full bg-neutral-900 border-2 border-slate-400/80 p-1 flex items-center justify-center shadow-inner">
+                            <div class="w-9 h-9 rounded-full bg-black border border-indigo-900 flex items-center justify-center">
+                                <div class="w-4 h-4 rounded-full bg-blue-950/80 border border-indigo-400/30"></div>
+                            </div>
+                        </div>
+                        <div class="w-13 h-13 flex flex-col items-center justify-center gap-1.5">
+                            <div class="w-5 h-5 rounded-full bg-amber-100 border border-amber-300 shadow-md flex items-center justify-center"><div class="w-2 h-2 rounded-full bg-amber-400"></div></div>
+                            <div class="w-4 h-4 rounded-full bg-neutral-950 border border-neutral-700"></div>
+                        </div>
+                    </div>`
+            },
+            samsung: {
+                title: "Galaxy S25 Ultra",
+                brandBadge: "Samsung Flagship",
+                osTag: "One UI 7.1 Android 15",
+                year: "2026 Model",
+                specs: {
+                    screen: '6.8" Dynamic AMOLED 2X (120Hz)',
+                    chip: "Snapdragon 8 Gen 4 Ultra",
+                    camera: "200MP + 50MP + 50MP + 10MP",
+                    ram: "16GB / 1TB AI Edition",
+                    battery: "5500 mAh (65W Fast Charge)"
+                },
+                colors: {
+                    black: { name: 'أسود', frame: '#1c1c1e', backGrad: 'radial-gradient(circle at center, #2c2c2e 0%, #111112 100%)' },
+                    silver: { name: 'فضي', frame: '#d1d1d6', backGrad: 'radial-gradient(circle at center, #e5e5ea 0%, #b2b2b7 100%)' },
+                    titanium: { name: 'تيتانيوم', frame: '#8e8e93', backGrad: 'radial-gradient(circle at center, #a2a2a7 0%, #636366 100%)' }
+                },
+                defaultWp: 'wp-samsung-cyber',
+                logo: '<span class="text-xl font-extrabold tracking-widest text-slate-200">SAMSUNG</span>',
+                cameraModule: `
+                    <div class="flex flex-col gap-3 items-end pr-2">
+                        <div class="flex gap-2 items-center">
+                            <div class="w-12 h-12 rounded-full bg-neutral-900 border-2 border-slate-500 p-1 flex items-center justify-center shadow-lg"><div class="w-7 h-7 rounded-full bg-black border border-cyan-500/40"></div></div>
+                            <div class="w-12 h-12 rounded-full bg-neutral-900 border-2 border-slate-500 p-1 flex items-center justify-center shadow-lg"><div class="w-7 h-7 rounded-full bg-black border border-cyan-500/40"></div></div>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <div class="w-12 h-12 rounded-full bg-neutral-900 border-2 border-slate-500 p-1 flex items-center justify-center shadow-lg"><div class="w-7 h-7 rounded-full bg-black border border-cyan-500/40"></div></div>
+                            <div class="w-10 h-10 rounded-full bg-neutral-900 border-2 border-slate-600 p-1 flex items-center justify-center shadow-lg"><div class="w-5 h-5 rounded-full bg-amber-200"></div></div>
+                        </div>
+                    </div>`
+            },
+            pixel: {
+                title: "Google Pixel 9 Pro",
+                brandBadge: "Google AI Phone",
+                osTag: "Stock Android 15 Pro",
+                year: "2026 Model",
+                specs: {
+                    screen: '6.7" Super Actua OLED (120Hz)',
+                    chip: "Google Tensor G4 AI",
+                    camera: "50MP + 48MP + 48MP AI Vision",
+                    ram: "16GB / 512GB Obsidian",
+                    battery: "5050 mAh (30W Fast Charge)"
+                },
+                colors: {
+                    obsidian: { name: 'حجري', frame: '#242424', backGrad: 'radial-gradient(circle at center, #383838 0%, #1a1a1a 100%)' },
+                    porcelain: { name: 'عاجي', frame: '#e8e6e1', backGrad: 'radial-gradient(circle at center, #f5f4f0 0%, #d8d6d0 100%)' }
+                },
+                defaultWp: 'wp-pixel-abstract',
+                logo: '<i class="fa-brands fa-google text-5xl text-slate-200 drop-shadow-lg"></i>',
+                cameraModule: `
+                    <div class="w-[260px] h-[65px] bg-neutral-800 rounded-full border-2 border-slate-500 shadow-2xl flex items-center justify-around px-4">
+                        <div class="w-10 h-10 rounded-full bg-black border border-slate-600 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-cyan-900"></div></div>
+                        <div class="w-10 h-10 rounded-full bg-black border border-slate-600 flex items-center justify-center"><div class="w-5 h-5 rounded-full bg-cyan-900"></div></div>
+                        <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center"><div class="w-3 h-3 rounded-full bg-amber-400"></div></div>
+                    </div>`
+            }
+        };
+
+        let currentPhoneKey = 'iphone';
+        let isFlipped = false;
+        let isPoweredOn = true;
+        let currentWallpaperClass = 'wp-ios-aurora';
+
+        // Switch Phone Model in mahdi electro Hub
+        function switchPhone(key) {
+            if (!phoneData[key]) return;
+            currentPhoneKey = key;
+
+            // Highlight Active Tab
+            ['iphone', 'samsung', 'pixel'].forEach(k => {
+                const btn = document.getElementById(`tab-${k}`);
+                if (k === key) {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-md flex items-center gap-2";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-2";
+                }
+            });
+
+            const data = phoneData[key];
+
+            // Update Specs UI
+            document.getElementById('phone-title').textContent = data.title;
+            document.getElementById('phone-brand-badge').textContent = data.brandBadge;
+            document.getElementById('phone-os-tag').textContent = data.osTag;
+            document.getElementById('phone-year').textContent = data.year;
+
+            document.getElementById('spec-screen').textContent = data.specs.screen;
+            document.getElementById('spec-chip').textContent = data.specs.chip;
+            document.getElementById('spec-camera').textContent = data.specs.camera;
+            document.getElementById('spec-ram').textContent = data.specs.ram;
+            document.getElementById('spec-battery').textContent = data.specs.battery;
+
+            // Render Colors Palette
+            const colorGrid = document.getElementById('color-selector-grid');
+            colorGrid.innerHTML = '';
+            Object.keys(data.colors).forEach(cKey => {
+                const col = data.colors[cKey];
+                const btn = document.createElement('button');
+                btn.className = "flex flex-col items-center gap-1.5 p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all border border-white/5";
+                btn.onclick = () => setPhoneColor(cKey);
+                btn.innerHTML = `
+                    <span class="w-7 h-7 rounded-full shadow-md border-2 border-white/20" style="background: ${col.frame};"></span>
+                    <span class="text-[10px] text-slate-300">${col.name}</span>
+                `;
+                colorGrid.appendChild(btn);
+            });
+
+            // Set default initial color & back camera
+            const firstColorKey = Object.keys(data.colors)[0];
+            setPhoneColor(firstColorKey);
+
+            document.getElementById('back-camera-module').innerHTML = data.cameraModule;
+            document.getElementById('back-brand-logo').innerHTML = data.logo;
+            document.getElementById('setting-device-name').textContent = data.title;
+            document.getElementById('setting-os-ver').textContent = data.osTag;
+
+            // Change default wallpaper
+            setWallpaper(data.defaultWp);
+
+            // Dynamic Island display adjustment for Android vs iPhone
+            const island = document.getElementById('dynamic-island');
+            const islandText = document.getElementById('island-text');
+            if (key === 'iphone') {
+                island.style.width = "120px";
+                islandText.textContent = "iPhone 17 Pro";
+            } else if (key === 'samsung') {
+                island.style.width = "40px";
+                islandText.textContent = "";
+            } else {
+                island.style.width = "35px";
+                islandText.textContent = "";
+            }
+        }
+
+        // Live Clock Updates
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
+            
+            document.getElementById('clock-time').textContent = timeString;
+            document.getElementById('widget-time').textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Phone Flip Logic
+        function toggleFlip() {
+            const flipper = document.getElementById('phone-flipper');
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                flipper.classList.add('flipped');
+            } else {
+                flipper.classList.remove('flipped');
+            }
+        }
+
+        // Power Toggle
+        function togglePower() {
+            const overlay = document.getElementById('screen-off-overlay');
+            const powerText = document.getElementById('power-text');
+            isPoweredOn = !isPoweredOn;
+
+            if (!isPoweredOn) {
+                overlay.style.opacity = '1';
+                powerText.textContent = 'تشغيل الهاتف';
+                closeApp();
+            } else {
+                overlay.style.opacity = '0';
+                powerText.textContent = 'إيقاف التشغيل';
+            }
+        }
+
+        // Change Phone Color
+        function setPhoneColor(colorKey) {
+            const data = phoneData[currentPhoneKey];
+            const color = data.colors[colorKey];
+            if (!color) return;
+
+            document.getElementById('phone-front-side').style.background = color.frame;
+            document.getElementById('phone-back-side').style.background = color.frame;
+            document.getElementById('back-glass-texture').style.background = color.backGrad;
+        }
+
+        // Change Wallpaper
+        function setWallpaper(wpClass) {
+            const screen = document.getElementById('phone-screen');
+            screen.classList.remove(currentWallpaperClass);
+            screen.classList.add(wpClass);
+            currentWallpaperClass = wpClass;
+        }
+
+        // Apps Navigation
+        function openApp(appId) {
+            if (!isPoweredOn) return;
+            closeApp();
+            const targetApp = document.getElementById(`app-${appId}`);
+            if (targetApp) {
+                targetApp.classList.remove('hidden');
+            }
+        }
+
+        function closeApp() {
+            const apps = document.querySelectorAll('.app-window');
+            apps.forEach(app => app.classList.add('hidden'));
+        }
+
+        // Interactive Island Dynamic Effects
+        function expandIsland() {
+            if (currentPhoneKey !== 'iphone') return;
+            const island = document.getElementById('dynamic-island');
+            const text = document.getElementById('island-text');
+            
+            text.textContent = "mahdi electro AI 17";
+            island.style.width = "200px";
+
+            setTimeout(() => {
+                island.style.width = "120px";
+                text.textContent = "iPhone 17 Pro";
+            }, 3000);
+        }
+
+        function triggerIslandMusic() {
+            if (!isPoweredOn) return;
+            const island = document.getElementById('dynamic-island');
+            const text = document.getElementById('island-text');
+            const icon = document.getElementById('island-icon');
+
+            if (currentPhoneKey === 'iphone') {
+                text.textContent = "مشغل الأغاني • 3:42";
+                icon.className = "fa-solid fa-music text-pink-400 text-[10px]";
+                island.style.width = "180px";
+
+                setTimeout(() => {
+                    island.style.width = "120px";
+                    text.textContent = "iPhone 17 Pro";
+                    icon.className = "fa-solid fa-apple text-amber-400 text-[10px]";
+                }, 4000);
+            }
+        }
+
+        function triggerIslandCall() {
+            if (!isPoweredOn) return;
+            const island = document.getElementById('dynamic-island');
+            const text = document.getElementById('island-text');
+            const icon = document.getElementById('island-icon');
+
+            if (currentPhoneKey === 'iphone') {
+                text.textContent = "مكالمة جارية...";
+                icon.className = "fa-solid fa-phone text-emerald-400 text-[10px]";
+                island.style.width = "170px";
+
+                setTimeout(() => {
+                    island.style.width = "120px";
+                    text.textContent = "iPhone 17 Pro";
+                    icon.className = "fa-solid fa-apple text-amber-400 text-[10px]";
+                }, 4000);
+            }
+        }
+
+        // Calculator Logic
+        let calcVal = '0';
+        function calcInput(val) {
+            const display = document.getElementById('calc-display');
+            if (val === 'C') {
+                calcVal = '0';
+            } else if (val === '=') {
+                try {
+                    calcVal = eval(calcVal.replace(/×/g, '*').replace(/÷/g, '/')).toString();
+                } catch {
+                    calcVal = 'خطأ';
+                }
+            } else {
+                if (calcVal === '0' || calcVal === 'خطأ') calcVal = '';
+                calcVal += val;
+            }
+            display.textContent = calcVal;
+        }
+
+        // Camera Simulation Photos
+        const samplePhotos = [
+            "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60",
+            "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=60",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&auto=format&fit=crop&q=60"
+        ];
+        let photoIndex = 0;
+
+        function switchCameraPhoto() {
+            photoIndex = (photoIndex + 1) % samplePhotos.length;
+            document.getElementById('camera-preview').src = samplePhotos[photoIndex];
+        }
+
+        function takeSnap() {
+            const preview = document.getElementById('camera-preview');
+            preview.style.opacity = '0.2';
+            setTimeout(() => preview.style.opacity = '1', 150);
+        }
+
+        // Initialize default Phone load
+        switchPhone('iphone');
+    </script>
+</body>
+</html>
